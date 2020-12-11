@@ -146,7 +146,7 @@ setClass("AnnotationHubMetadata",
     RDataPath <- strsplit(RDataPath, split=":")
 
     if(all(
-        (meta$Location_Prefix == 'http://s3.amazonaws.com/annotationhub/') ||
+        (meta$Location_Prefix == 'http://s3.amazonaws.com/annotationhub/') |
         (meta$Location_Prefix == 'http://s3.amazonaws.com/experimenthub/'))
        ){
         package <- basename(pathToPackage)
@@ -159,6 +159,12 @@ setClass("AnnotationHubMetadata",
 
     ## Real time assignments
     meta$RDataDateAdded <- rep(Sys.time(), nrow(meta))
+
+    # if HubId not present make placeholder
+    if (all(is.null(HubId <- meta$HubId))) {
+        meta$HubId <- ''
+    }
+
     meta
 }
 
@@ -256,11 +262,20 @@ checkSpeciesTaxId <- function(txid, species, verbose=TRUE){
     TRUE
 }
 
+.checkHubId <- function(value) {
+    valStr <- deparse(substitute(value))
+    .checkThatSingleStringOrNAAndNoCommas(value)
+    if(!(startsWith(value, "AH") || startsWith(value, "EH") || value == "" ||
+         is.na(value) || is.null(value)))
+        stop("HubId must be a valid EH or AH id or NA")
+}
+
+
 globalVariables(c("BiocVersion", "Coordinate_1_based", "DataProvider",
                   "Description", "DispatchClass", "Genome", "Location_Prefix",
                   "Maintainer", "RDataClass", "RDataDateAdded", "RDataPath",
                   "SourceType", "SourceUrl", "SourceVersion", "Species",
-                  "TaxonomyId", "Title"))
+                  "TaxonomyId", "Title", "HubId"))
 
 ## Used for contributed packages, not internal recipes.
 makeAnnotationHubMetadata <- function(pathToPackage, fileName=character())
@@ -302,7 +317,8 @@ makeAnnotationHubMetadata <- function(pathToPackage, fileName=character())
                     Recipe=NA_character_,
                     DispatchClass=DispatchClass,
                     PreparerClass=.package,
-                    Location_Prefix=Location_Prefix))
+                    Location_Prefix=Location_Prefix,
+                    HubId=HubId))
             })
     })
     names(ans) <- fileName
@@ -319,7 +335,7 @@ AnnotationHubMetadata <-
         RDataClass, RDataDateAdded, RDataPath,
         Maintainer, ..., BiocVersion=BiocManager::version(),
         Coordinate_1_based = TRUE, Notes=NA_character_, DispatchClass,
-        Location_Prefix='http://s3.amazonaws.com/annotationhub/')
+        Location_Prefix='http://s3.amazonaws.com/annotationhub/', HubId='')
 {
     if (missing(TaxonomyId) | is.na(TaxonomyId))
     {
@@ -363,6 +379,8 @@ AnnotationHubMetadata <-
     .checkValidSingleString(Title)
     .checkValidSingleString(Description)
 
+    .checkHubId(HubId)
+
     new("AnnotationHubMetadata",
         AnnotationHubRoot=AnnotationHubRoot,
         HubRoot=AnnotationHubRoot,
@@ -389,6 +407,7 @@ AnnotationHubMetadata <-
         Title=Title,
         Location_Prefix=Location_Prefix,
         DispatchClass=DispatchClass,
+        HubId=HubId,
         ...
     )
 }

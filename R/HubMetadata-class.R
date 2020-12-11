@@ -38,6 +38,7 @@ setClass("HubMetadata",
         Location_Prefix="character",
         DispatchClass="character",
         PreparerClass="character",          ## needed for record_id
+        HubId="character",
         Error="character"
     ),
     prototype = prototype(
@@ -67,6 +68,7 @@ setClass("HubMetadata",
         Location_Prefix=NA_character_,
         DispatchClass=NA_character_,
         PreparerClass=NA_character_,
+        HubId=NA_character_,
         Error="NA_character"
     )
 )

@@ -54,7 +54,8 @@ ahmToJson <- function(ahm){
     rdatapaths <- Map(list,
                       rdatapath=lst[['rdatapath']],
                       rdataclass=lst[['rdataclass']],
-                      dispatchclass=lst[['dispatchclass']] 
+                      dispatchclass=lst[['dispatchclass']],
+                      version_id="null"
                       )
     ## using Map puts unwanted labels on things...
     names(rdatapaths) <- NULL 
@@ -97,7 +98,8 @@ ahmToJson <- function(ahm){
                  input_sources=input_sources,
                  tags=lst[['tags']],
                  biocversions=lst[['biocversion']],
-                 preparerclass=lst[['preparerclass']]
+                 preparerclass=lst[['preparerclass']],
+                 ah_id=lst[['hubid']]
                  )
     
     ## then make JSON
