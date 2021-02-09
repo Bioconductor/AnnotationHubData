@@ -149,7 +149,8 @@ setClass("AnnotationHubMetadata",
         (meta$Location_Prefix == 'http://s3.amazonaws.com/annotationhub/') |
         (meta$Location_Prefix == 'http://s3.amazonaws.com/experimenthub/'))
        ){
-        package <- basename(pathToPackage)
+        description <- read.dcf(file.path(pathToPackage, "DESCRIPTION"))
+        package <- unname(description[,"Package"])
         test <- vapply(unlist(RDataPath), startsWith, logical(1), package)
         if ((!all(test)) || (any(is.na(test)))){
             stop("RDataPath must start with package name: ", package)
@@ -253,6 +254,40 @@ checkSpeciesTaxId <- function(txid, species, verbose=TRUE){
           value)))
 }
 
+.checkValidViews <- function(views){
+
+    msg = list()
+    biocViewsVocab <- NULL
+    data("biocViewsVocab", package="biocViews", envir=environment())
+    # check all valid terms
+    if (!all(views %in% graph::nodes(biocViewsVocab))){
+        badViews <- views[!(views %in% graph::nodes(biocViewsVocab))]
+        badViewsVec <- paste(badViews, collapse=", ")
+        msg["invalid"] = paste0("Invalid biocViews term[s].\n    ", badViewsVec, "\n")
+    }
+    repo = biocViews::guessPackageType(views)
+    # check all come from same biocViews main category
+    parents <- unlist(lapply(views, BiocCheck:::getParent, biocViewsVocab), use.names=FALSE)
+    if (!all(parents == repo))
+        msg["Category"] = paste0("All biocViews terms must come from the same category.\n")
+    # check that hub term present
+    if (repo == "AnnotationData" || repo == "ExperimentData"){
+        repo = paste0(gsub(repo, pattern="Data", replacement=""), "Hub")
+        if (!(repo %in% views))
+            msg["Hub"] = paste0("Please add ", repo, " to biocViews list in DESCRIPTION.\n")
+    } else {
+        softHubViews <- c("ExperimentHubSoftware", "AnnotationHubSoftware")
+        if (!any(softHubViews %in% views)){
+            msg["Hub"] = paste0("Please add either ExperimentHubSoftware or AnnotationHubSoftware to biocViews list in DESCRIPTION.\n  ")
+        }
+    }
+    if (length(msg) != 0){
+        myfunction <- function(index, msg){paste0("[", index, "] ", msg[index])}
+        fmt_msg <- unlist(lapply(seq_along(msg), msg = msg, FUN=myfunction))
+        stop("\n",fmt_msg)
+    }
+}
+
 .checkFileLengths <- function(RDataPath, DispatchClass)
 {
 
@@ -285,18 +320,45 @@ makeAnnotationHubMetadata <- function(pathToPackage, fileName=character())
         fileName <- list.files(path, pattern="*\\.csv")
     ans <- lapply(fileName,
         function(xx) {
-            meta <- .readMetadataFromCsv(pathToPackage, xx)
-            .package <- basename(pathToPackage)
-            if (is.na(meta$Tags) || !length(meta$Tags))
-                stop("please add 'Tags' values to metadata")
 
-            .tags <- strsplit(meta$Tags, ":")
-            .tags <- lapply(.tags,
-                            FUN<- function(x, packageName){
-                                sort(unique(c(x, packageName)))},
-                            packageName=.package)
-            if (any(unlist(lapply(.tags, FUN=length)) <= 1))
-                stop("Add 2 or more Tags to each resource.")
+            description <- read.dcf(file.path(pathToPackage, "DESCRIPTION"))
+            .views <- strsplit(gsub("\\s", "", description[,"biocViews"]), ",")[[1]]
+            if (length(.views) <= 1) stop("Add 2 or more biocViews to your DESCRIPTION. Required: AnnotationHub or AnnotationHubSoftware")
+            .checkValidViews(.views)
+            ## filter views for common/not useful terms
+            .views = setdiff(.views,
+                             c("AnnotationData", "AnnotationHub","ChipManufacture", "ChipName", "Organism", "PackageType",
+                               "Software", "AssayDomain", "BiologicalQuestion","ResearchField", "Technology", "WorkflowStep")
+                             )
+
+            meta <- .readMetadataFromCsv(pathToPackage, xx)
+            .package <- unname(description[,"Package"])
+
+            ## check for Tags in metadata
+            ## filter out packageName as already tracked in database with preparerclass
+            if (length(meta$Tags)){
+                .tags <- strsplit(meta$Tags, ":")
+                .tags <- lapply(.tags,
+                                FUN<- function(x, views, packageName){
+                                    setdiff(sort(unique(c(x, views))), packageName)},
+                                views = .views, packageName=.package)
+                if (any(unlist(lapply(.tags, FUN=length)) < 1))
+                    stop("Add 1 or more Tags to each resource by either\n",
+                         "  adding 'Tags' values to metadata or\n",
+                         "  adding additional meaningful biocViews terms in DESCRIPTION")
+            }else{
+                if (length(.views)){
+                    .tags = vector("list", nrow(meta))
+                    .tags <- lapply(.tags,
+                                    FUN<- function(x, views, packageName){
+                                        setdiff(sort(unique(views)), packageName)},
+                                    views = .views, packageName=.package)
+                }else{
+                     stop("Add 1 or more Tags to each resource by either\n",
+                         "  adding 'Tags' values to metadata or\n",
+                         "  adding additional meaningful biocViews terms in DESCRIPTION")
+                }
+            }
 
             .RDataPaths <- meta$RDataPath
 

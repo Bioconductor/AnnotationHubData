@@ -1,7 +1,7 @@
 ---
 title: "Introduction to AnnotationHubData"
 author: "Lori Shepherd"
-date: "Modified: October 2016. Compiled: `r format(Sys.Date(), '%d %b %Y')`"
+date: "Modified: February 2021. Compiled: `r format(Sys.Date(), '%d %b %Y')`"
 output:
   BiocStyle::html_document:
     toc: true
@@ -20,6 +20,13 @@ functions will be used by the Bioconcutor Core Team. For information on how to
 use `AnnotationHub` or how to create an `AnnotationHub` package please see the
 vignettes in `AnnotationHub`. 
 
+# Creating an AnnotationHub Package or Converting to an AnnotationHub Package
+
+Please see AnnotationHub Vignette "CreateAHubPackage".
+```
+vignette("CreateAHubPackage", package="AnnotationHub")
+```
+
 # Historical vignettes
 
 The process for adding data to `AnnotationHub` has evolved substantially since
@@ -27,3 +34,4 @@ the first vignettes were written. Much of the information contained in those
 documents is outdated or applicable only to repeat-run recipes added to the
 code base. These documents have been retained for historical purposes and
 are located in the inst/scripts/ directory of the `AnnotationHubData` package.
+

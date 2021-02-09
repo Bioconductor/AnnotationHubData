@@ -1,3 +1,27 @@
+CHANGES IN VERSION 1.21.0
+------------------------
+
+MODIFICATIONS
+
+    o 1.21.4 Removed vignette for creating annotation hub package. Reference and
+    refer to single vignette in AnnotationHub 
+    o 1.21.3 Tags for database now combination of biocViews and meta$Tags. Also
+    checks for valid AnnotationHub or AnnotationHubSoftware biocViews.
+    o 1.21.2 Add mtx.gz as valid source type
+
+BUG CORRECTION
+
+    o 1.21.3 Fixed bug to run make*HubMetadata using "."
+
+INTERNAL BUG CORRECTION
+
+    o 1.21.1 misplaced ! clause
+
+REMOVED
+
+    o 1.21.5 Removed BioPax. url no longer valid. Resources were old and never
+    used beyond first addition
+
 CHANGES IN VERSION 1.19.0
 ------------------------
 

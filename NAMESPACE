@@ -9,7 +9,7 @@ import(RCurl)
 import(BiocManager)
 import(Biostrings)
 
-importFrom(biocViews, recommendPackages)
+importFrom(biocViews, recommendPackages, guessPackageType)
 importMethodsFrom(AnnotationDbi, exists, get, saveDb)
 importMethodsFrom(BiocGenerics, mapply, Map)
 importMethodsFrom(DBI, dbDriver, dbGetQuery)
@@ -22,7 +22,6 @@ importMethodsFrom(rtracklayer,
 )
 importFrom(Biobase, AnnotatedDataFrame, ExpressionSet)
 importFrom(GenomeInfoDb, Seqinfo)
-importFrom(rBiopaxParser, readBiopax)
 importFrom(rtracklayer, GRangesForUCSCGenome, ucscGenomes)
 importFrom(Rsamtools, bgzip)
 importFrom(AnnotationForge, makeInpDb, makeOrgPackageFromNCBI)
@@ -41,7 +40,11 @@ importFrom(graphics, title)
 importFrom(utils,
     capture.output, data, download.file,
     read.delim, read.table, str, read.csv
-)
+    )
+
+import(BiocCheck)
+import(biocViews)
+importFrom(graph, nodes)
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Export S4 classes

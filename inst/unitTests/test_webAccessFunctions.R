@@ -33,14 +33,14 @@ test_ftpDirectoryInfo <- function(){
 
 test_ftpFileInfo <- function(){
     setup()
-    url <- "ftp://ftp1.nci.nih.gov/pub/PID/BioPAX/"
-    ans <- .ftpFileInfo(url, "BioCarta.owl.gz")
+    url <- "ftp://ftp.ensembl.org/pub/release-98/gtf/homo_sapiens/"
+    ans <- .ftpFileInfo(url, "chr.gtf.gz")
     checkTrue(is(ans, "data.frame"))
     checkIdentical(names(ans), c("fileurl", "date", "size"))
     checkTrue(nrow(ans) == 1L)
 
     ans <- .ftpFileInfo(url, ".gz")
-    checkEquals(nrow(ans), 6L)
+    checkTrue(nrow(ans) > 0L)
 
     ans <- .ftpFileInfo(url, "FILE_THAT_DOESNT_EXIST.gz")
     checkTrue(is(ans, "data.frame"))
@@ -51,11 +51,11 @@ test_ftpFileInfo <- function(){
 
 test_listRemoteFiles <- function(){
     setup()
-    url <- "ftp://ftp1.nci.nih.gov/pub/PID/BioPAX/"
+    url <- "ftp://ftp.ensembl.org/pub/"
     ans <- .listRemoteFiles(url)
     checkTrue(is(ans, "character"))
     checkTrue(is.null(names(ans)))
-    checkTrue(length(ans) == 6L)
+    checkTrue(length(ans) > 0L)
     tearDown()
 }
 
