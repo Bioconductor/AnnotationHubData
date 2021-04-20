@@ -315,6 +315,16 @@ makeAnnotationHubMetadata <- function(pathToPackage, fileName=character())
     meta <- .readMetadataFromCsv(pathToPackage, fileName)
     .package <- unname(description[,"Package"])
 
+    ah <- AnnotationHub::AnnotationHub()
+    inhub <- getPackageMetadata(ah, .package)
+
+    res <- paste0(meta$Location_Prefix, meta$RDataPath) %in% paste0(inhub$Location_Prefix, inhub$RDataPath)
+    if (all(res))  stop("no new data to add")
+
+    if (any(!res)) {
+        meta = meta[(!res),]
+    }
+
     ## check for Tags in metadata
     ## filter out packageName as already tracked in database with preparerclass
     if (length(meta$Tags)){
