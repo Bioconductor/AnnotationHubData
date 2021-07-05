@@ -404,6 +404,10 @@ AnnotationHubMetadata <-
         stop(wmsg(paste0("AnnotationHubMetdata SourceUrl slot cannot",
                          " contain NAs")))
 
+    if(any(length(SourceUrl)<=255))
+        stop(wmsg(paste0("AnnotationHubMetadata SourceUrl slot cannot",
+                         " be longer than 255 characters long")))
+
     if (missing(RDataPath)) {
         ## Add two characters: one for substr starting AT clipChars
         ## and one for extra slash
