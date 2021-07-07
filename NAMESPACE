@@ -103,7 +103,7 @@ export(
     metadata, "metadata<-",
     metadataList, metadataTable,
     annotationHubRoot,
-    sourceUrls
+    sourceUrls, getPackageMetadata
 )
 
 exportMethods(
@@ -113,7 +113,7 @@ exportMethods(
     metadata, "metadata<-",
     metadataList, metadataTable,
     annotationHubRoot,
-    sourceUrls
+    sourceUrls, getPackageMetadata
 )
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

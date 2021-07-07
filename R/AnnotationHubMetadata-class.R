@@ -300,79 +300,83 @@ globalVariables(c("BiocVersion", "Coordinate_1_based", "DataProvider",
 ## Used for contributed packages, not internal recipes.
 makeAnnotationHubMetadata <- function(pathToPackage, fileName=character())
 {
-    path <- file.path(pathToPackage, "inst", "extdata")
-    if (!length(fileName))
-        fileName <- list.files(path, pattern="*\\.csv")
-    ans <- lapply(fileName,
-        function(xx) {
+    stopifnot(length(fileName) <= 1)
 
-            description <- read.dcf(file.path(pathToPackage, "DESCRIPTION"))
-            .views <- strsplit(gsub("\\s", "", description[,"biocViews"]), ",")[[1]]
-            if (length(.views) <= 1) stop("Add 2 or more biocViews to your DESCRIPTION. Required: AnnotationHub or AnnotationHubSoftware")
-            .checkValidViews(.views)
-            ## filter views for common/not useful terms
-            .views = setdiff(.views,
-                             c("AnnotationData", "AnnotationHub","ChipManufacture", "ChipName", "Organism", "PackageType",
-                               "Software", "AssayDomain", "BiologicalQuestion","ResearchField", "Technology", "WorkflowStep")
-                             )
+    description <- read.dcf(file.path(pathToPackage, "DESCRIPTION"))
+    .views <- strsplit(gsub("\\s", "", description[,"biocViews"]), ",")[[1]]
+    if (length(.views) <= 1) stop("Add 2 or more biocViews to your DESCRIPTION. Required: AnnotationHub or AnnotationHubSoftware")
+    .checkValidViews(.views)
+    ## filter views for common/not useful terms
+    .views = setdiff(.views,
+                     c("AnnotationData", "AnnotationHub","ChipManufacture", "ChipName", "Organism", "PackageType",
+                       "Software", "AssayDomain", "BiologicalQuestion","ResearchField", "Technology", "WorkflowStep")
+                     )
 
-            meta <- .readMetadataFromCsv(pathToPackage, xx)
-            .package <- unname(description[,"Package"])
+    meta <- .readMetadataFromCsv(pathToPackage, fileName)
+    .package <- unname(description[,"Package"])
 
-            ## check for Tags in metadata
-            ## filter out packageName as already tracked in database with preparerclass
-            if (length(meta$Tags)){
-                .tags <- strsplit(meta$Tags, ":")
-                .tags <- lapply(.tags,
-                                FUN<- function(x, views, packageName){
-                                    setdiff(sort(unique(c(x, views))), packageName)},
-                                views = .views, packageName=.package)
-                if (any(unlist(lapply(.tags, FUN=length)) < 2))
-                    stop("Add 2 or more Tags to each resource by either\n",
+    ah <- AnnotationHub::AnnotationHub()
+    inhub <- getPackageMetadata(ah, .package)
+
+    res <- paste0(meta$Location_Prefix, meta$RDataPath) %in% paste0(inhub$Location_Prefix, inhub$RDataPath)
+    if (all(res))  stop("no new data to add")
+
+    if (any(!res)) {
+        meta = meta[(!res),]
+    }
+
+    ## check for Tags in metadata
+    ## filter out packageName as already tracked in database with preparerclass
+    if (length(meta$Tags)){
+        .tags <- strsplit(meta$Tags, ":")
+        .tags <- lapply(.tags,
+                        FUN<- function(x, views, packageName){
+                            setdiff(sort(unique(c(x, views))), packageName)},
+                        views = .views, packageName=.package)
+        if (any(unlist(lapply(.tags, FUN=length)) < 2))
+            stop("Add 2 or more Tags to each resource by either\n",
+                 "  adding 'Tags' column to metadata or\n",
+                 "  adding additional meaningful biocViews terms in DESCRIPTION")
+    }else{
+        if (length(.views)){
+            .tags = vector("list", nrow(meta))
+            .tags <- lapply(.tags,
+                            FUN<- function(x, views, packageName){
+                                setdiff(sort(unique(views)), packageName)},
+                            views = .views, packageName=.package)
+            if (any(unlist(lapply(.tags, FUN=length)) < 2))
+                stop("Add 2 or more Tags to each resource by either\n",
+                     "  adding 'Tags' column to metadata or\n",
+                     "  adding additional meaningful biocViews terms in DESCRIPTION")
+        }else{
+            stop("Add 2 or more Tags to each resource by either\n",
                          "  adding 'Tags' column to metadata or\n",
-                         "  adding additional meaningful biocViews terms in DESCRIPTION")
-            }else{
-                if (length(.views)){
-                    .tags = vector("list", nrow(meta))
-                    .tags <- lapply(.tags,
-                                    FUN<- function(x, views, packageName){
-                                        setdiff(sort(unique(views)), packageName)},
-                                    views = .views, packageName=.package)
-                    if (any(unlist(lapply(.tags, FUN=length)) < 2))
-                        stop("Add 2 or more Tags to each resource by either\n",
-                             "  adding 'Tags' column to metadata or\n",
-                             "  adding additional meaningful biocViews terms in DESCRIPTION")
-                }else{
-                     stop("Add 2 or more Tags to each resource by either\n",
-                         "  adding 'Tags' column to metadata or\n",
-                         "  adding additional meaningful biocViews terms in DESCRIPTION")
-                }
-            }
+                 "  adding additional meaningful biocViews terms in DESCRIPTION")
+        }
+    }
 
-            .RDataPaths <- meta$RDataPath
+    .RDataPaths <- meta$RDataPath
 
-            lapply(seq_len(nrow(meta)), function(x) {
-                with(meta[x, ], AnnotationHubMetadata(
-                    Title=Title, Description=Description,
-                    BiocVersion=BiocVersion, Genome=Genome,
-                    SourceType=SourceType,
-                    SourceUrl=SourceUrl,
-                    SourceVersion=SourceVersion,
-                    Species=Species, TaxonomyId=TaxonomyId,
-                    Coordinate_1_based=Coordinate_1_based,
-                    DataProvider=DataProvider,
-                    Maintainer=Maintainer,
-                    RDataClass=RDataClass, Tags=.tags[[x]],
-                    RDataDateAdded=RDataDateAdded,
-                    RDataPath=.RDataPaths[[x]],
-                    Recipe=NA_character_,
-                    DispatchClass=DispatchClass,
-                    PreparerClass=.package,
-                    Location_Prefix=Location_Prefix))
-            })
-    })
-    names(ans) <- fileName
-    ans
+    lapply(seq_len(nrow(meta)), function(x) {
+        with(meta[x, ], AnnotationHubMetadata(
+                            Title=Title, Description=Description,
+                            BiocVersion=BiocVersion, Genome=Genome,
+                            SourceType=SourceType,
+                            SourceUrl=SourceUrl,
+                            SourceVersion=SourceVersion,
+                            Species=Species, TaxonomyId=TaxonomyId,
+                            Coordinate_1_based=Coordinate_1_based,
+                            DataProvider=DataProvider,
+                            Maintainer=Maintainer,
+                            RDataClass=RDataClass, Tags=.tags[[x]],
+                            RDataDateAdded=RDataDateAdded,
+                            RDataPath=.RDataPaths[[x]],
+                            Recipe=NA_character_,
+                            DispatchClass=DispatchClass,
+                            PreparerClass=.package,
+                            Location_Prefix=Location_Prefix))
+    }
+    )
 }
 
 AnnotationHubMetadata <-
