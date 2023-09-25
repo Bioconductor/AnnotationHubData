@@ -108,31 +108,17 @@ trackWithAuxiliaryTablesToGRanges <- function(ahm)
 
 
 .makeComplexGR <- function(tbl,auxFiles,auxTabs){
-    ## replace "chrom" with "seqnames".
-    colnames(tbl)[colnames(tbl) %in% "chrom"] <- "seqname"
-    colnames(tbl)[colnames(tbl) %in% "chromStart"] <- "start"
-    colnames(tbl)[colnames(tbl) %in% "chromEnd"] <- "end"
-    
-    tbl <-.sortTableByChromosomalLocation(tbl)
-    colnames <- colnames(tbl)
-    requiredColnames <- c("seqname", "start", "end")
-    stopifnot(all(requiredColnames %in% colnames))
-    otherColnames <- setdiff(colnames, requiredColnames)
-    
+    tbl <- .sortTableByChromosomalLocation(
+        tbl, seqname = "chrom", start = "chromStart"
+    )
     ## drop any rows withouth a seqname
-    tbl <- tbl[!is.na(tbl$seqname),]
-    
-    if("strand" %in%  otherColnames){
-        gr <- with(tbl, GRanges(seqname, IRanges(start, end), strand))
-        otherColnames <- setdiff(colnames, c(requiredColnames,"strand"))
-    }else{  
-        gr <- with(tbl, GRanges(seqname, IRanges(start, end)))
-    }
-    ## append the initial mcols
-    mcols(gr) <- DataFrame(tbl[, otherColnames])
-    
-    
-    
+    tbl <- tbl[!is.na(tbl[["chrom"]]),]
+
+    gr <- makeGRangesFromDataFrame(
+        tbl, keep.extra.columns = TRUE,
+        start.field = "chromStart", end.field = "chromEnd"
+    )
+
     ## make a spliting factor based on the initial table
     splitFactor <- factor(tbl$id, levels=tbl$id)
     
