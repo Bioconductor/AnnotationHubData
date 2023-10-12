@@ -264,3 +264,46 @@ print.pointer <- function(x, ...)
 # ..(z)$fish <- "trout"
 # ..(z)
 # x
+
+
+
+
+
+.getmetadata <- function(path, pkgname)
+{
+    if (is(path, "Hub")){
+        db_path <- AnnotationHub::dbfile(path)
+    } else if (class(path) == "character"){
+        db_path <- path
+    }else{
+        db_path <- RSQLite::dbGetInfo(path)$dbname
+    }
+    query <- paste0(
+        "SELECT DISTINCT resources.ah_id, resources.title, resources.description, biocversions.biocversion, resources.species, resources.genome, resources.taxonomyid, input_sources.sourcetype, input_sources.sourceurl, input_sources.sourceversion, resources.coordinate_1_based, resources.dataprovider, resources.maintainer, rdatapaths.rdataclass, rdatapaths.dispatchclass, location_prefixes.location_prefix, rdatapaths.rdatapath, tags.tag FROM resources, rdatapaths, biocversions, input_sources, location_prefixes, tags WHERE resources.id == rdatapaths.resource_id AND resources.location_prefix_id == location_prefixes.id AND biocversions.resource_id == resources.id AND input_sources.resource_id == resources.id AND tags.resource_id == resources.id AND resources.preparerclass == '",pkgname,"'")
+    if (is(path, "Hub")){
+        conn <- AnnotationHub::dbfile(path)
+    } else if (class(path) == "character"){
+        conn <- AnnotationHub:::.db_open(path)
+        on.exit(AnnotationHub:::.db_close(conn))
+    }else{
+        conn <- path
+    }
+    mat <- AnnotationHub:::.db_query(conn, query)
+
+    ## now fix tags -- tags format is ":" seperated but in database each unique
+    ## column results in multiple rows
+    for(vl in unique(mat[,"ah_id"])){
+        dx = which(mat[,"ah_id"]==vl)
+        mat[dx,"tag"] = paste0(mat[dx,"tag"], collapse=":")
+    }
+    mat = unique(mat)
+    ## add hubid column for base resource
+    mat = cbind(hubid = gsub('\\..*', '',mat$ah_id), mat)
+    ## fix colnames to be correct case for valid metadata
+    colnames(mat) = c("HubId", "ah_id", "Title", "Description", "BiocVersion",
+                      "Species", "Genome", "TaxonomyId", "SourceType", "SourceUrl",
+                      "SourceVersion", "Coordinate_1_based", "DataProvider",
+                      "Maintainer", "RDataClass", "DispatchClass",
+                      "Location_Prefix", "RDataPath", "Tags")
+    mat
+}
