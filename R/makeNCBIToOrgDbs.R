@@ -12,13 +12,26 @@
 ## biocversion should be the current devel version, soon to roll over
 ## to the new release.
 
+.loadSpecData <- function() {
+    dataenv <- new.env(parent = emptyenv())
+    data("specData", package = "GenomeInfoDbData", envir = dataenv)
+    specData <- dataenv[["specData"]]
+    specData[!is.na(specData[["species"]]), ]
+}
+
+.loadResults <- function() {
+    viablefile <- system.file(
+        'extdata', 'viableIDs.rda', package = 'AnnotationForge', mustWork = TRUE
+    )
+    dataenv <- new.env(parent = emptyenv())
+    load(file = viablefile, envir = dataenv)
+    dataenv[["results"]]
+}
+
 ## The 'standard' OrgDbs are generated with makeStandardOrgDbsToSqlite.R.
 
 .NCBIMetadataFromUrl <- function(baseUrl, justRunUnitTest, biocVersion, currentMetadata) {
-
-    load(system.file('extdata','viableIDs.rda', package='AnnotationForge'))
-    ids <- results
-
+    ids <- .loadResults()
     if (justRunUnitTest) ids <- head(ids)
     ## FIXME: need different solution; this subset produces NAs
     if (length(biocVersion) > 1) {
@@ -27,10 +40,7 @@
     }
     ## Marc's note:
     ## need to find an alternative to this... old school table of tax Ids
-    if (!exists("specData")) {
-    load(system.file("data", "specData.rda", package = "GenomeInfoDbData"))
-    }
-    sd <- specData[!is.na(specData[[3]]),]
+    sd <- .loadSpecData()
     ## need to find offenders
     lookup <- function(id){
         message(paste0("looking up value for: ", id))
@@ -106,9 +116,7 @@
 needToRerunNonStandardOrgDb <- function(biocVersion =  BiocManager::version(),
                                         baseUrl = "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/",
                                         resourceDir=".", justRunUnitTest=FALSE){
-    load(system.file('extdata','viableIDs.rda', package='AnnotationForge'))
-    ids <- results
-
+    ids <- .loadResults()
     if (justRunUnitTest) ids <- head(ids)
     ## FIXME: need different solution; this subset produces NAs
     if (length(biocVersion) > 1) {
@@ -117,10 +125,7 @@ needToRerunNonStandardOrgDb <- function(biocVersion =  BiocManager::version(),
     }
     ## Marc's note:
     ## need to find an alternative to this... old school table of tax Ids
-    if (!exists("specData")) {
-    load(system.file("data", "specData.rda", package = "GenomeInfoDbData"))
-    }
-    sd <- specData[!is.na(specData[[3]]),]
+    sd <- .loadSpecData()
     ## need to find offenders
     lookup <- function(id){
         message(paste0("looking up value for: ", id))
@@ -173,9 +178,7 @@ needToRerunNonStandardOrgDb <- function(biocVersion =  BiocManager::version(),
 oldAWSS3_needToRerunNonStandardOrgDb <- function(biocVersion =  BiocManager::version(),
                                         baseUrl =
                                         "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/"){
-    load(system.file('extdata','viableIDs.rda', package='AnnotationForge'))
-    ids <- results
-
+    ids <- .loadResults()
     ## FIXME: need different solution; this subset produces NAs
     if (length(biocVersion) > 1) {
         stop(paste("'biocVersion' must be a single value. Make sure new",
@@ -183,10 +186,7 @@ oldAWSS3_needToRerunNonStandardOrgDb <- function(biocVersion =  BiocManager::ver
     }
     ## Marc's note:
     ## need to find an alternative to this... old school table of tax Ids
-    if (!exists("specData")) {
-    load(system.file("data", "specData.rda", package = "GenomeInfoDbData"))
-    }
-    sd <- specData[!is.na(specData[[3]]),]
+    sd <- .loadSpecData()
     ## need to find offenders
     lookup <- function(id){
         message(paste0("looking up value for: ", id))
