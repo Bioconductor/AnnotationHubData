@@ -97,6 +97,10 @@ setGeneric("hubError<-", signature=c("x", "value"),
     function(x, value) standardGeneric("hubError<-")
 )
 
+setGeneric("getPackageMetadata", signature="packageName",
+    function(hub, packageName, fileName) standardGeneric("getPackageMetadata")
+)
+
 ## ------------------------------------------------------------------------------
 ## getters and setters
 ##
@@ -180,4 +184,16 @@ setMethod(show, "HubMetadata",
         txt <- paste0(slt, ": ", paste0(as.character(value), collapse=" "))
         cat(strwrap(txt), sep="\n  ")
     }
+})
+
+
+setMethod("getPackageMetadata", "character",
+          function(hub, packageName, fileName)
+{
+    stopifnot(!missing(packageName), length(packageName)==1)
+    mat = .getmetadata(hub, packageName)
+    if(!missing(fileName)){
+        write.csv(mat, file=fileName, row.names=FALSE)
+    }
+    mat
 })
